@@ -1,0 +1,15 @@
+Bay,Subset,DiversityIndex,Spearman_r,p_value,Significance,n
+Hiroshima Bay,All,Shannon,-0.344,0.0058,**,63
+Hiroshima Bay,All,Pielou,0.133,0.3066,ns,61
+Hiroshima Bay,Stressed(DO≤4),Shannon,0.298,0.4362,ns,9
+Hiroshima Bay,Stressed(DO≤4),Pielou,0.468,0.2038,ns,9
+Osaka Bay,All,Shannon,0.147,0.2469,ns,64
+Osaka Bay,All,Pielou,0.053,0.6823,ns,61
+Osaka Bay,Stressed(DO≤4),Shannon,0.007,0.9827,ns,12
+Osaka Bay,Stressed(DO≤4),Pielou,-0.018,0.9601,ns,10
+Ise Bay,All,Shannon,0.017,0.8511,ns,127
+Ise Bay,All,Pielou,-0.215,0.0208,*,115
+Ise Bay,Stressed(DO≤4),Shannon,0.455,0.0069,**,34
+Ise Bay,Stressed(DO≤4),Pielou,0.065,0.748,ns,27
+SIS (other),All,Shannon,0.078,0.193,ns,277
+SIS (other),All,Pielou,0.259,0.0,***,254

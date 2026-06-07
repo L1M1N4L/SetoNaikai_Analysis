@@ -1,0 +1,33 @@
+Region,Variable,n_years,Kendall_tau,p_value,Sen_slope,Intercept,Trend,Significance
+Ise,TOC,33,0.1746,0.1539,0.063854,15.2283,no trend,ns
+Ise,Sulfides,33,-0.0304,0.8042,-0.000564,0.4215,no trend,ns
+Ise,ORP,33,-0.186,0.1288,-1.472068,-240.4469,no trend,ns
+Ise,COD,33,-0.0019,0.9876,-0.002583,16.508,no trend,ns
+Ise,LOI,33,0.2008,0.1041,0.037846,6.9545,no trend,ns
+Ise,Clay_pct,33,0.2386,0.0523,0.354037,62.2521,no trend,ns
+Ise,Depth_m,33,0.5994,0.0,0.148,10.4153,increasing,***
+Ise,do_nearest,33,-0.245,0.0456,-0.036733,4.8277,decreasing,*
+SIS,TOC,33,-0.0682,0.5904,-0.030825,15.5167,no trend,ns
+SIS,Sulfides,33,-0.3485,0.004,-0.016035,0.5713,decreasing,**
+SIS,ORP,33,0.25,0.0417,3.489974,-253.1729,increasing,*
+SIS,COD,33,-0.2955,0.0155,-0.305494,23.4232,decreasing,*
+SIS,LOI,33,0.0833,0.5082,0.008442,8.5519,no trend,ns
+SIS,Clay_pct,33,-0.3068,0.0118,-0.343404,90.5,decreasing,*
+SIS,Depth_m,33,0.4472,0.0003,0.173704,19.0636,increasing,***
+SIS,do_nearest,33,0.5379,0.0,0.106769,2.425,increasing,***
+Tokyo,TOC,33,0.2142,0.0799,0.054434,18.3402,no trend,ns
+Tokyo,Sulfides,33,0.0265,0.8416,0.001249,0.74,no trend,ns
+Tokyo,ORP,33,0.053,0.6781,0.65762,-167.5219,no trend,ns
+Tokyo,COD,33,-0.5265,0.0,-0.349241,27.7629,decreasing,***
+Tokyo,LOI,33,-0.0228,0.8525,-0.001944,9.1186,no trend,ns
+Tokyo,Clay_pct,33,0.2841,0.0201,0.803838,58.4053,increasing,*
+Tokyo,Depth_m,33,-0.1346,0.2712,-0.017622,14.8694,no trend,ns
+Tokyo,do_nearest,33,0.1156,0.3445,0.022456,2.5907,no trend,ns
+All,TOC,33,-0.1364,0.2736,-0.021024,17.4289,no trend,ns
+All,Sulfides,33,-0.3295,0.0067,-0.008765,0.6206,decreasing,**
+All,ORP,33,0.1023,0.4145,0.920396,-199.8297,no trend,ns
+All,COD,33,-0.4356,0.0003,-0.246561,23.1577,decreasing,***
+All,LOI,33,0.1402,0.2603,0.015134,8.4145,no trend,ns
+All,Clay_pct,33,0.2765,0.0238,0.566676,61.9105,increasing,*
+All,Depth_m,33,0.491,0.0001,0.189437,13.0262,increasing,***
+All,do_nearest,33,0.3712,0.0021,0.064,3.0685,increasing,**

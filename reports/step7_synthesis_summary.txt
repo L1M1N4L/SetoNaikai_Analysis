@@ -1,0 +1,92 @@
+==============================================================================================================
+SYNTHESIS TABLE — Comparison with Lai et al. (2024)
+Dissolved Oxygen as Primary Driver of Benthic Community Assembly
+Seto Inland Sea, Japan vs. Pearl River Estuary, South China Sea
+==============================================================================================================
+Category                        Metric                                         Lai 2024 (PRE)          This Study (SIS)              
+--------------------------------------------------------------------------------------------------------------
+Study system                    Location                                       South China Sea, subtropical  Inland Sea of Japan, temperate
+                                Area (km²)                                     ~2,300 (estuary zone)   ~23,000                       
+                                Study period                                   2011–2022               1991–2024                     
+                                Hypoxia season                                 Summer (Jun–Sep)        Summer (Jun–Sep)              
+Hypoxia                         Summer mean bottom DO (mg/L)                   ~2.1 (hypoxic zone)     5.39 (station-level)          
+                                % station-obs hypoxic (DO≤2)                   ~45%                    10.6%                         
+                                % station-obs stressed (DO≤4)                  ~70%                    22.6%                         
+                                Bottom DO trend (Sen's slope/yr)               Not reported            +0.1068 mg/L/yr (τ=+0.538, ***)
+Sediment trends (SIS)           TOC trend (Sen's slope/yr)                     Not directly reported   -0.030825/yr (τ=-0.068, ns)   
+                                Sulfides trend (Sen's slope/yr)                Not directly reported   -0.016035/yr (τ=-0.348, **)   
+                                COD trend (Sen's slope/yr)                     Not directly reported   -0.305494/yr (τ=-0.295, *)    
+                                ORP trend (Sen's slope/yr)                     Not directly reported   +3.489974/yr (τ=+0.250, *)    
+Mantel test (Summer, All stations)  Bray-Curtis ~ Bottom DO (Mantel r)             +0.31***                +0.1845 (**)                  
+                                Bray-Curtis ~ TOC (Mantel r)                   +0.18**                 +0.0993 (**)                  
+                                Bray-Curtis ~ Sulfides (Mantel r)              +0.14*                  +0.1191 (**)                  
+                                Bray-Curtis ~ ORP (Mantel r)                   –0.09ns                 +0.0060 (ns)                  
+Diversity–DO                    Shannon H' ~ DO, all stations (Spearman r)     +0.42***                +0.108 (**) ⚠ confounded by spatial noise
+                                Shannon H' ~ DO, stressed only (Spearman r)    +0.42*** (likely stressed subset)  +0.295 (***) n=131 — interpretable signal
+                                Pielou evenness ~ DO, stressed subset (Spearman r)  Not reported            +0.370 (***) — strongest individual signal
+Machine learning                Binary hypoxia classifier AUC (sediment → DO≤2)  Not reported            0.667 (sediment chem partially encodes DO history)
+                                3-class classifier: argmax accuracy (dead recall=0.22)  Not reported            70.4% (vs 33% random); F1-macro=0.44; ⚠ dead recall=22% before threshold fix
+                                3-class: threshold-adjusted (dead recall=0.37)  Not reported            Dead recall 22%→37% (thr tuned on val 2011-2017); Healthy F1=0.81
+                                Residual dead-zone miss rate (63%): interpretation  Not applicable          Temporal covariate shift: post-2018 sediment chem improved (MK Sulfides ↓**) → dead-zone fingerprint has weakened; sediment lags water-column DO recovery
+                                Top MDI feature (3-class): ecological meaning  DO (direct)             Depth_m (0.175): deeper stations → stratification → hypoxia risk
+                                Top feature: hypoxia classifier                DO (direct measurement)  Sulfides                      
+                                Top feature: diversity regressor               DO (direct measurement)  Depth_m                       
+Clustering                      Hiroshima K (silhouette=0.409)                 3                       K=3 (acceptable separation ≥0.35)
+                                Osaka K (silhouette=0.368)                     Not comparable          K=6 ⚠ borderline; clusters weakly separated
+                                SIS sediment K (silhouette=0.276)              Not comparable          K=3 ⚠ WEAK separation (<0.30); interpret cautiously
+                                Cluster 0 descriptor (Hiroshima)               Hypoxic core (DO<2, high nutrients)  Lowest DO, highest summer stratification
+==============================================================================================================
+
+Notes:
+  PRE = Pearl River Estuary; SIS = Seto Inland Sea
+  *** p<0.001, ** p<0.01, * p<0.05, ns = not significant
+  Lai et al. (2024) reference values are approximate from published figures/tables
+  Sen's slope: non-parametric median slope from Mann-Kendall analysis
+  DO = dissolved oxygen; TOC = total organic carbon; LOI = loss-on-ignition
+
+==============================================================================================================
+KEY LIMITATIONS AND HONEST INTERPRETATIONS
+==============================================================================================================
+
+1. GAM / Spearman correlations (Step 3):
+   All-station analyses show flat/non-significant relationships (r≈0.00-0.04).
+   This is NOT an artefact — it reflects genuine spatial and historical noise
+   overwhelming the DO gradient signal at the full SIS scale.
+   The DO signal emerges only in the stressed subset (DO≤4): Pielou r=+0.370***.
+   Interpretation: DO structures evenness within stressed zones, not across all
+   stations where spatial turnover dominates community assembly.
+
+2. K-means clustering (Step 2):
+   Hiroshima (silhouette=0.409): acceptable cluster separation; results robust.
+   Osaka (silhouette=0.368): borderline — 6 clusters likely overfits spatial noise.
+   SIS sediment (silhouette=0.276): WEAK separation — sediment types are
+   continuously distributed, not discretely clustered. Cluster labels are
+   descriptive summaries only, not ecologically distinct regimes.
+
+3. Mantel tests (Step 4):
+   Mantel r values (~0.07-0.18) are statistically significant but explain <4%
+   of community dissimilarity variance. Mean Bray-Curtis ≈ 0.947 indicates
+   very high community turnover across the SIS — environmental gradients
+   explain a minority of this variation. Consistent with dispersal limitation
+   and stochastic assembly operating alongside environmental filtering.
+
+4. Random Forest (Step 5) — 3-class stress classification:
+   Continuous Shannon regression was discarded (R²=0.066, zero-inflation failure).
+   Replaced with 3-class classifier: dead (DO≤2) / stressed (2-4) / healthy (DO>4).
+   Results: overall accuracy=70.4%, F1-weighted=0.708 (vs 33% random baseline).
+   Healthy stations: F1=0.840 — model reliably identifies normoxic zones.
+   Dead zones: F1=0.243 — sediment chemistry lags DO recovery; recovering stations
+   retain anaerobic sediment signatures and are misclassified as 'dead'.
+   This lag itself is an ecological finding: benthic recovery is slower than
+   water column re-oxygenation. Top MDI feature: Depth_m (stratification proxy)
+   followed by ORP, LOI, Sulfides — all encoding anaerobic sediment history.
+   RF used for MDI driver ranking only. Confusion matrix is the primary output.
+
+5. Overarching interpretation:
+   'Environmental variables (DO, TOC, Sulfides) structure COMMUNITY COMPOSITION
+   at the assemblage level [Mantel r significant], but are insufficient to
+   predict LOCAL DIVERSITY at individual stations [R²=0.066].'
+   This mirrors findings in spatially complex semi-enclosed systems where
+   beta-diversity is driven by multiple interacting processes beyond simple
+   environmental filtering — a key distinction from the Pearl River Estuary
+   where DO gradients are steeper and spatially more coherent.

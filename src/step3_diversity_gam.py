@@ -227,6 +227,57 @@ spear_all.to_csv("data/processed/step3_spearman_heatmap_all.csv", index=False)
 spear_str.to_csv("data/processed/step3_spearman_heatmap_hypoxic.csv", index=False)
 
 # ─────────────────────────────────────────────
+# 3D2. Within-bay Spearman: Shannon/Pielou vs DO per bay
+# ─────────────────────────────────────────────
+print("\n" + "=" * 60)
+print("3D2. Within-bay Spearman: diversity vs DO")
+print("=" * 60)
+
+# Assign bay label from lat/lon bounding boxes
+def assign_bay(lat, lon):
+    if pd.isna(lat) or pd.isna(lon):
+        return "Unknown"
+    if 34.0 <= lat <= 34.55 and 131.8 <= lon <= 132.75:
+        return "Hiroshima Bay"
+    if 34.25 <= lat <= 34.75 and 135.0 <= lon <= 135.55:
+        return "Osaka Bay"
+    if 34.5 <= lat <= 35.1 and 136.4 <= lon <= 137.25:
+        return "Ise Bay"
+    if 33.5 <= lat <= 35.0 and 130.0 <= lon <= 134.5:
+        return "SIS (other)"
+    return "Other/Unknown"
+
+div_env["bay_label"] = [assign_bay(lat, lon)
+                         for lat, lon in zip(div_env["lat_dd"], div_env["lon_dd"])]
+
+print("\nRecords per bay:")
+print(div_env["bay_label"].value_counts().to_string())
+
+# Run Spearman per bay for Shannon and Pielou vs DO
+TARGET_DIVS = ["Shannon", "Pielou"]
+bay_rows = []
+for bay in ["Hiroshima Bay", "Osaka Bay", "Ise Bay", "SIS (other)"]:
+    sub_bay = div_env[div_env["bay_label"] == bay].dropna(subset=["do_station"])
+    sub_bay_str = sub_bay[sub_bay["do_station"] <= DO_NORMOXIC]
+    for label, df in [("All", sub_bay), ("Stressed(DO≤4)", sub_bay_str)]:
+        for div_col in TARGET_DIVS:
+            sub = df[[div_col, "do_station"]].dropna()
+            if len(sub) < 8:
+                print(f"  SKIP {bay} [{label}] {div_col}: n={len(sub)}")
+                continue
+            r, p = stats.spearmanr(sub[div_col], sub["do_station"])
+            sig = "***" if p<0.001 else ("**" if p<0.01 else ("*" if p<0.05 else "ns"))
+            print(f"  {bay:18s}  [{label:15s}]  {div_col:8s}: r={r:+.3f}  p={p:.4f}  {sig}  n={len(sub)}")
+            bay_rows.append({
+                "Bay": bay, "Subset": label, "DiversityIndex": div_col,
+                "Spearman_r": round(r, 3), "p_value": round(p, 4),
+                "Significance": sig, "n": len(sub)
+            })
+
+bay_spear_df = pd.DataFrame(bay_rows)
+bay_spear_df.to_csv("data/processed/step3_within_bay_spearman.csv", index=False)
+
+# ─────────────────────────────────────────────
 # 3E. GAM fitting
 # ─────────────────────────────────────────────
 print("\n" + "=" * 60)
@@ -270,11 +321,18 @@ gam_df.to_csv("data/processed/step3_gam_results.csv", index=False)
 print("\nGenerating figures …")
 
 # Fig 1 — GAM plots: diversity vs station-level DO
-fig, axes = plt.subplots(2, 4, figsize=(18, 9))
+# Two rows: all stations (flat/confounded) + stressed only (signal present)
+fig, axes = plt.subplots(2, 4, figsize=(18, 10))
 fig.suptitle(
     "Diversity Indices vs Station-Level Bottom DO\n"
-    "(top: all stations | bottom: stressed stations DO≤4 mg/L)",
-    fontweight="bold", fontsize=11)
+    "Top row: all stations — relationship flat/confounded by spatial noise  |  "
+    "Bottom row: DO-stressed subset (DO≤4) — ecologically interpretable signal",
+    fontweight="bold", fontsize=10)
+
+STRESS_COLOURS = {
+    "All stations":    ("#4575b4", "#d73027", 0.30),  # scatter, fit, alpha
+    "Stressed (DO≤4)": ("#2ca25f", "#006d2c", 0.45),
+}
 
 for col_i, div_col in enumerate(DIVERSITY_INDICES):
     for row_i, (label, subset) in enumerate([
@@ -283,38 +341,76 @@ for col_i, div_col in enumerate(DIVERSITY_INDICES):
     ]):
         ax = axes[row_i][col_i]
         sub = subset[["do_station", div_col]].dropna()
+
+        # Background shading for hypoxia zones
+        ax.axvspan(0, DO_HYPOXIC,  alpha=0.08, color="red",    label="Hypoxic" if col_i==0 else "")
+        ax.axvspan(DO_HYPOXIC, DO_NORMOXIC, alpha=0.05, color="orange", label="Stressed" if col_i==0 else "")
+
         if len(sub) < 4:
             ax.text(0.5, 0.5, f"n={len(sub)}\nInsufficient",
-                    ha="center", va="center", transform=ax.transAxes)
+                    ha="center", va="center", transform=ax.transAxes, fontsize=9)
+            ax.set_title(f"{div_col}", fontsize=9, fontweight="bold")
             continue
 
+        sc_col, fit_col, sc_alpha = STRESS_COLOURS[label]
         ax.scatter(sub["do_station"], sub[div_col],
-                   alpha=0.4, s=15, color="#4575b4", edgecolors="none")
+                   alpha=sc_alpha, s=12, color=sc_col, edgecolors="none")
 
         do_range = np.linspace(sub["do_station"].min(), sub["do_station"].max(), 100)
+        fit_ok = False
         if HAS_GAM and len(sub) >= 10:
             try:
                 gam = LinearGAM(s(0, n_splines=5)).fit(
                     sub["do_station"].values.reshape(-1,1), sub[div_col].values)
                 pred = gam.predict(do_range.reshape(-1,1))
                 ci   = gam.confidence_intervals(do_range.reshape(-1,1), width=0.95)
-                ax.plot(do_range, pred, color="#d73027", lw=2)
-                ax.fill_between(do_range, ci[:,0], ci[:,1], alpha=0.2, color="#d73027")
+                ax.plot(do_range, pred, color=fit_col, lw=2, zorder=5)
+                ax.fill_between(do_range, ci[:,0], ci[:,1], alpha=0.15, color=fit_col)
+                fit_ok = True
             except Exception:
                 pass
+        if not fit_ok:
+            sl, ic, lr, lp, _ = stats.linregress(sub["do_station"], sub[div_col])
+            ax.plot(do_range, sl * do_range + ic, color=fit_col, lw=1.5, ls="--")
 
-        ax.axvline(DO_HYPOXIC, color="grey", linestyle="--", lw=1, alpha=0.7)
-        ax.axvline(DO_NORMOXIC, color="grey", linestyle=":", lw=1, alpha=0.5)
+        ax.axvline(DO_HYPOXIC, color="grey", linestyle="--", lw=0.8, alpha=0.6)
+        ax.axvline(DO_NORMOXIC, color="grey", linestyle=":", lw=0.8, alpha=0.5)
+
         r, p = stats.spearmanr(sub["do_station"], sub[div_col])
         sig = "***" if p<0.001 else ("**" if p<0.01 else ("*" if p<0.05 else "ns"))
-        ax.set_title(f"{div_col} | {label[:11]}", fontsize=8, fontweight="bold")
+
+        # Flag flat/uninformative all-station results explicitly
+        interp = ""
+        if row_i == 0 and abs(r) < 0.05:
+            interp = "\n⚠ flat: spatial noise dominates"
+        elif row_i == 0 and abs(r) < 0.12:
+            interp = "\n⚠ weak: confounded"
+
+        ax.set_title(f"{div_col}", fontsize=9, fontweight="bold")
         ax.set_xlabel("Bottom DO (mg/L)", fontsize=7)
         ax.set_ylabel(div_col, fontsize=7)
-        ax.text(0.05, 0.93, f"r={r:.2f}{sig} n={len(sub)}",
-                transform=ax.transAxes, fontsize=7,
-                bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8))
+        info_col = "#c0392b" if (row_i==0 and abs(r)<0.12) else "black"
+        ax.text(0.04, 0.96, f"r={r:+.2f} {sig}  n={len(sub)}{interp}",
+                transform=ax.transAxes, fontsize=6.5, va="top",
+                color=info_col,
+                bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.85))
 
-plt.tight_layout()
+    # Row labels
+axes[0][0].set_ylabel("Shannon H'\n(All stations)", fontsize=8)
+axes[1][0].set_ylabel("Shannon H'\n(Stressed, DO≤4)", fontsize=8)
+
+# Add row annotations
+for row_i, (row_label, row_color, row_note) in enumerate([
+    ("ALL STATIONS  ←  flat or confounded; dominated by spatial/historical noise",
+     "#7f8c8d", 0.01),
+    ("STRESSED (DO≤4)  ←  ecologically interpretable signal present",
+     "#27ae60", 0.01),
+]):
+    fig.text(0.01, 0.95 - row_i*0.49, row_label,
+             fontsize=8, color=row_color, style="italic",
+             transform=fig.transFigure)
+
+plt.tight_layout(rect=[0, 0, 1, 0.96])
 plt.savefig("figures/step3_gam_diversity_vs_do.png", dpi=150, bbox_inches="tight")
 plt.close()
 print("  → figures/step3_gam_diversity_vs_do.png")
@@ -355,6 +451,61 @@ plt.tight_layout()
 plt.savefig("figures/step3_spearman_heatmap.png", dpi=150, bbox_inches="tight")
 plt.close()
 print("  → figures/step3_spearman_heatmap.png")
+
+# Fig 2b — Within-bay Spearman: diversity vs DO
+if len(bay_spear_df) > 0:
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    fig.suptitle(
+        "Within-Bay Spearman r: Diversity vs Bottom DO\n"
+        "SIS-wide analysis conflates bays with different hypoxia regimes — "
+        "within-bay signal is stronger",
+        fontweight="bold", fontsize=10)
+
+    bays = ["Hiroshima Bay", "Osaka Bay", "Ise Bay", "SIS (other)"]
+    bay_colors = ["#d73027", "#fc8d59", "#4575b4", "#74add1"]
+
+    for ax, div_col in zip(axes, TARGET_DIVS):
+        for subset_label, alpha, hatch in [("All", 0.65, ""), ("Stressed(DO≤4)", 0.9, "//")]:
+            sub = bay_spear_df[(bay_spear_df["DiversityIndex"] == div_col) &
+                                (bay_spear_df["Subset"] == subset_label)]
+            x_pos = np.arange(len(bays))
+            offset = -0.2 if subset_label == "All" else 0.2
+            rs = []
+            for bay in bays:
+                row = sub[sub["Bay"] == bay]
+                rs.append(row["Spearman_r"].values[0] if len(row) > 0 else np.nan)
+
+            bars = ax.bar(x_pos + offset, rs, 0.38,
+                          color=[bay_colors[i] for i in range(len(bays))],
+                          alpha=alpha, hatch=hatch, edgecolor="k", lw=0.5,
+                          label=subset_label)
+            # Significance stars
+            for i, (bay, r_val) in enumerate(zip(bays, rs)):
+                row = sub[sub["Bay"] == bay]
+                if len(row) == 0 or np.isnan(r_val):
+                    continue
+                sig = row["Significance"].values[0]
+                n = row["n"].values[0]
+                ypos = r_val + (0.02 if r_val >= 0 else -0.05)
+                ax.text(x_pos[i] + offset, ypos, f"{sig}\nn={n}",
+                        ha="center", fontsize=6.5, va="bottom" if r_val>=0 else "top")
+
+        ax.axhline(0, color="k", lw=0.8)
+        ax.axhline(0.30, color="green", lw=1, ls=":", alpha=0.7, label="r=0.30 (moderate)")
+        ax.axhline(-0.30, color="green", lw=1, ls=":", alpha=0.7)
+        ax.set_xticks(np.arange(len(bays)))
+        ax.set_xticklabels([b.replace(" ", "\n") for b in bays], fontsize=9)
+        ax.set_ylabel(f"Spearman r ({div_col} vs DO)", fontsize=10)
+        ax.set_title(f"{div_col}", fontweight="bold", fontsize=11)
+        ax.set_ylim(-0.7, 0.9)
+        ax.yaxis.grid(True, alpha=0.3, ls="--")
+        ax.set_axisbelow(True)
+        ax.legend(fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig("figures/step3_within_bay_spearman.png", dpi=150, bbox_inches="tight")
+    plt.close()
+    print("  → figures/step3_within_bay_spearman.png")
 
 # Fig 3 — DO distribution at benthos stations
 fig, axes = plt.subplots(1, 2, figsize=(13, 5))

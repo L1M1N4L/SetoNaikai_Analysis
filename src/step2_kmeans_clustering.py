@@ -251,7 +251,20 @@ axes[1].set_xlabel("Number of clusters K")
 axes[1].set_ylabel("Average Silhouette Score")
 axes[1].set_title("Silhouette Scores by Dataset", fontweight="bold")
 axes[1].legend()
-axes[1].axhline(0, color="k", lw=0.5)
+axes[1].axhline(0,    color="k",      lw=0.5)
+axes[1].axhline(0.50, color="green",  lw=1, ls="--", alpha=0.6, label="Strong (≥0.50)")
+axes[1].axhline(0.35, color="orange", lw=1, ls="--", alpha=0.6, label="Acceptable (≥0.35)")
+axes[1].axhline(0.25, color="red",    lw=1, ls="--", alpha=0.6, label="Weak (≥0.25)")
+axes[1].legend(fontsize=8)
+# Annotate quality interpretation
+axes[1].text(0.02, 0.97,
+    "Silhouette quality guide:\n"
+    "≥0.50: strong separation\n"
+    "0.35–0.50: acceptable\n"
+    "0.25–0.35: weak (⚠ interpret cautiously)\n"
+    "<0.25: poorly separated",
+    transform=axes[1].transAxes, fontsize=7, va="top",
+    bbox=dict(boxstyle="round", facecolor="lightyellow", alpha=0.85))
 
 plt.tight_layout()
 plt.savefig("figures/step2_elbow_silhouette.png", dpi=150, bbox_inches="tight")
@@ -314,17 +327,42 @@ axes[0].set_ylabel("Sulfides (mg/g)")
 axes[0].set_title("SIS Summer Sediment: TOC vs Sulfides\n(colour = matched bottom DO)",
                   fontweight="bold")
 
+# Assign descriptive labels to sediment clusters based on Sulfides content
+sed_mean_sulf = sed_feat.groupby("cluster")["硫化物"].mean().sort_values(ascending=False)
+sed_cluster_labels = {}
+for rank, (cid, _) in enumerate(sed_mean_sulf.items()):
+    mean_do = sed_feat[sed_feat["cluster"]==cid]["do_nearest"].mean()
+    mean_s  = sed_feat[sed_feat["cluster"]==cid]["硫化物"].mean()
+    if rank == 0:
+        sed_cluster_labels[cid] = f"High-sulfide/low-ORP\n(anaerobic; mean DO={mean_do:.1f})"
+    elif rank == sed_feat["cluster"].nunique()-1:
+        sed_cluster_labels[cid] = f"Low-sulfide/high-ORP\n(oxic; mean DO={mean_do:.1f})"
+    else:
+        sed_cluster_labels[cid] = f"Intermediate\n(mean DO={mean_do:.1f})"
+
+sed_sil_best = max(sil_sed)
+sed_quality  = ("acceptable" if sed_sil_best >= 0.35
+                else ("weak — interpret cautiously" if sed_sil_best >= 0.25
+                      else "poor — descriptive label only"))
+
 for c in sorted(sed_feat["cluster"].unique()):
     sub = sed_feat[sed_feat["cluster"] == c]
     col = cluster_colors.get(c, "#888888")
     axes[1].scatter(sub["TOC"], sub["硫化物"], c=col,
-                    label=f"Cluster {c} (mean DO={sub['do_nearest'].mean():.1f})",
+                    label=sed_cluster_labels.get(c, f"Cluster {c}"),
                     alpha=0.7, edgecolors="k", lw=0.3, s=40)
 axes[1].set_xlabel("TOC (mg/g)")
 axes[1].set_ylabel("Sulfides (mg/g)")
-axes[1].set_title(f"SIS Summer Sediment K-Means Clusters (K={best_k_sed})",
-                  fontweight="bold")
-axes[1].legend(fontsize=8)
+axes[1].set_title(
+    f"SIS Summer Sediment K-Means Clusters (K={best_k_sed})\n"
+    f"⚠ Silhouette={sed_sil_best:.3f} ({sed_quality}) — descriptive use only",
+    fontweight="bold", fontsize=9)
+axes[1].legend(fontsize=7, loc="upper left")
+axes[1].text(0.98, 0.03,
+    "Cluster separation is weak.\nHigh-sulfide group (anaerobic sediment)\n"
+    "is the primary ecologically meaningful\npattern — maps to hypoxic DO zones.",
+    transform=axes[1].transAxes, fontsize=7, ha="right", va="bottom",
+    bbox=dict(boxstyle="round", facecolor="lightyellow", alpha=0.9))
 
 plt.tight_layout()
 plt.savefig("figures/step2_sediment_cluster_scatter.png", dpi=150, bbox_inches="tight")
@@ -336,4 +374,7 @@ print("Step 2 COMPLETE")
 print("=" * 60)
 print(f"  Hiroshima best K: {best_k}  (silhouette={max(sil_scores):.4f})")
 print(f"  Osaka best K:     {best_k_osa}  (silhouette={max(sil_osa):.4f})")
-print(f"  Sediment best K:  {best_k_sed}  (silhouette={max(sil_sed):.4f})")
+print(f"  Sediment best K:  {best_k_sed}  (silhouette={sed_sil_best:.4f} — {sed_quality})")
+print(f"\nNOTE: Sediment K-means used for DESCRIPTIVE regime identification only.")
+print(f"      High-sulfide/low-ORP cluster is ecologically meaningful — anaerobic sediment")
+print(f"      encodes historical DO depletion. Weak silhouette limits inferential use.")
