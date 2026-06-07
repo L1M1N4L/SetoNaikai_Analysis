@@ -1,0 +1,4 @@
+Season,Subset,Variable,Mantel_r,p_value,Significance,n_pairs
+Summer,All,DO,0.1845,0.001,**,170236
+Summer,Stressed(DO≤4),DO,0.045,0.068,ns,8646
+Winter,All,DO,0.0727,0.001,**,208981

@@ -1,0 +1,9 @@
+Subset,DiversityIndex,n,Spearman_r,Spearman_p,R2,Method
+all,Shannon,1229,0.003,0.9125,0.98,GAM
+all,Simpson,1229,0.01,0.7298,0.795,GAM
+all,Margalef,1152,-0.023,0.4452,0.996,GAM
+all,Pielou,1152,0.037,0.2101,1.082,GAM
+stressed(DO≤4),Shannon,142,0.16,0.0564,0.969,GAM
+stressed(DO≤4),Simpson,142,0.201,0.0166,0.853,GAM
+stressed(DO≤4),Margalef,113,0.083,0.3842,0.995,GAM
+stressed(DO≤4),Pielou,113,0.37,0.0001,1.601,GAM

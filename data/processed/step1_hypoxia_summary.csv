@@ -1,0 +1,4 @@
+,n_stations,n_records,n_hypoxic,pct_hypoxic,mean_DO,min_DO
+Hiroshima 2014 (all months),19.0,228.0,4.0,1.8,7.2,0.93
+Hiroshima 2014 (summer only),19.0,76.0,4.0,5.3,5.55,0.93
+SIS-wide 1981-2024 (summer bottom),122.0,5082.0,8.0,0.2,6.62,0.0
