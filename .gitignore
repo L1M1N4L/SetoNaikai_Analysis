@@ -203,6 +203,54 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# =============================================================================
+# Project-specific: Data files
+# Raw data — never commit (too large, not reproducible from code)
+# =============================================================================
+data/raw/
+data/sushitsu/
+data/zip/
+data/boundaries/
+
+# Large processed outputs (binary / GIS / heavy CSVs)
+data/processed/*.feather
+data/processed/*.geojson
+data/processed/merged_gdf.csv
+data/processed/merged_gdf_saisuipoin_cleaned.csv
+
+# Keep lightweight processed CSVs and seasonal outputs in git
+# (they are small enough and document pipeline results)
+!data/processed/*.csv
+!data/processed/seasonal/**/*.csv
+
+# =============================================================================
+# Notebook checkpoints and scratch outputs
+# =============================================================================
+notebooks/.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# =============================================================================
+# Common large file types that should never be committed
+# =============================================================================
+*.xlsx
+*.xls
+*.shp
+*.dbf
+*.shx
+*.prj
+*.sbn
+*.sbx
+*.cpg
+*.qpj
+*.lyr
+*.kmz
+*.kml
+*.nc
+*.tif
+*.tiff
+*.zip
+*.tar.gz
+
 # Ruff stuff:
 .ruff_cache/
 
