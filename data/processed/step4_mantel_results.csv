@@ -14,9 +14,9 @@ Summer,"Stressed(DO≤4,n=132)",COD,128,8128,0.021,0.51,ns
 Summer,"Stressed(DO≤4,n=132)",LOI,128,8128,0.0052,0.9,ns
 Summer,"Stressed(DO≤4,n=132)",Clay%,128,8128,0.0371,0.426,ns
 Winter,All,DO,4313,208981,0.0727,0.001,**
-Winter,All,TOC,478,114003,0.0441,0.002,**
-Winter,All,Sulfides,476,113050,0.0205,0.29,ns
+Winter,All,TOC,478,114003,0.0441,0.003,**
+Winter,All,Sulfides,476,113050,0.0205,0.311,ns
 Winter,All,ORP,465,107880,0.0556,0.002,**
-Winter,All,COD,478,114003,-0.0092,0.558,ns
+Winter,All,COD,478,114003,-0.0092,0.556,ns
 Winter,All,LOI,478,114003,0.022,0.166,ns
 Winter,All,Clay%,478,114003,0.0992,0.001,**
